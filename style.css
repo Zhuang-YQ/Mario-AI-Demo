@@ -1,0 +1,91 @@
+/* ============================================================
+   超级玛丽 v0.1 — 样式
+   要求：居中、黑底、Canvas 整数倍放大、像素化渲染（不模糊）
+   ============================================================ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #000;
+  color: #fff;
+  font-family: monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.topbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 2px;
+  font-weight: normal;
+  color: #aabbcc;
+}
+
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  font-size: 11px;
+  color: #8899aa;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 16px;
+  padding: 1px 4px;
+  margin: 0 1px;
+  border: 1px solid #556677;
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: #111820;
+  font-family: monospace;
+  font-size: 10px;
+  color: #c8d8e8;
+  text-align: center;
+}
+
+/* 画布容器：黑底，像素化的关键 */
+.screen {
+  display: flex;
+  background: #000;
+  line-height: 0;
+}
+
+canvas {
+  display: block;
+  /* 像素级渲染：禁止浏览器做平滑插值 */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+  /* 宽度由 JS 按整数倍设置 */
+}
+
+.hint {
+  font-size: 10px;
+  color: #667788;
+  letter-spacing: 0.5px;
+}
