@@ -17,6 +17,10 @@
    * 0. 调参面板（PRD 2 节：物理参数集中放在 CONFIG 顶部）
    * ========================================================== */
   const CONFIG = {
+    // ---- 教学模式（v0.3：本作品定位为"AI 协作开发的教学可视化样本"）----
+    // 开启后在世界关键位置自动生成引导提示（锚点由关卡实体推导，不写死坐标）
+    tutorialMode: true,
+
     // ---- 移动（3.1）----
     // 数值反解：到全速时间 = v/a，滑行距离 = v²/(2f)
     //   走速 90 / 加速度 180 → 0.5s（目标 0.4~0.6s）
@@ -273,6 +277,7 @@
     floatTexts: [],
     spawn: { x: 0, y: 0 },
     flagX: 0,
+    hints: [],           // 教学模式提示锚点（loadLevel 生成）
     player: null,
     camera: 0,
     constructor_: function () {},
@@ -331,6 +336,53 @@
         }
       }
       Game.tiles.push(arr);
+    }
+
+    // ---- 教学模式：从关卡实体自动推导提示锚点（v0.3）----
+    Game.hints = [];
+    if (CONFIG.tutorialMode) {
+      // 1) 出生点：操作提示
+      Game.hints.push({
+        x: Game.spawn.x - 8, y: GROUND_TOP - 64,
+        text: '←→ 移动　空格 跳跃　Shift 加速',
+      });
+      // 2) 最左侧的敌人：踩踏教学
+      let enemyMinX = Infinity;
+      for (let i = 0; i < Game.enemies.length; i++) {
+        enemyMinX = Math.min(enemyMinX, Game.enemies[i].x);
+      }
+      if (enemyMinX < Infinity) {
+        Game.hints.push({ x: enemyMinX - 26, y: GROUND_TOP - 30, text: '跳起来踩扁它！' });
+      }
+      // 3) 第一个问号砖：顶砖教学
+      let qFound = false;
+      for (let r = 0; r < Game.tileH && !qFound; r++) {
+        for (let c = 0; c < Game.tileW && !qFound; c++) {
+          if (Game.tiles[r][c].char === '?') {
+            Game.hints.push({ x: c * TILE - 20, y: r * TILE - 16, text: '顶问号砖出金币' });
+            qFound = true;
+          }
+        }
+      }
+      // 4) 前两个地面缺口：坑教学（扫描地面行连续 ≥2 格空档）
+      const groundRow = Game.tileH - 2;
+      let runStart = -1, pitCount = 0;
+      for (let c = 0; c <= Game.tileW; c++) {
+        const solidHere = c < Game.tileW && Game.tiles[groundRow][c].char === 'X';
+        if (!solidHere && runStart < 0) {
+          runStart = c;
+        } else if (solidHere && runStart >= 0) {
+          if (c - runStart >= 2 && pitCount < 2) {
+            Game.hints.push({ x: runStart * TILE - 24, y: GROUND_TOP - 46, text: '小心：别掉坑里' });
+            pitCount++;
+          }
+          runStart = -1;
+        }
+      }
+      // 5) 旗杆：通关目标
+      if (Game.flagX > 0) {
+        Game.hints.push({ x: Game.flagX - 40, y: GROUND_TOP - 56, text: '冲向旗杆通关！' });
+      }
     }
   }
 
@@ -797,6 +849,7 @@
     drawCoinPops(camX);
     drawPlayer(camX);
     drawFloatTexts(camX);
+    drawTutorialHints(camX);
     drawHUD();
     drawOverlays();
   }
@@ -1289,6 +1342,26 @@
     ctx.fillText(text, x + 1, y + 1);
     ctx.fillStyle = PALETTE.text;
     ctx.fillText(text, x, y);
+  }
+
+  /* ---------- 教学模式提示牌（v0.3）----------
+   * 天空色底的提示牌，配色全部取自调色板（DARK.sky / PALETTE.sky / PALETTE.text）*/
+  function drawTutorialHints(camX) {
+    if (!CONFIG.tutorialMode || Game.state === 'gameover') return;
+    ctx.font = '8px monospace';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i < Game.hints.length; i++) {
+      const h = Game.hints[i];
+      const x = Math.round(h.x - camX);
+      if (x < -90 || x > VIEW_W + 10) continue;
+      const w = ctx.measureText(h.text).width + 6;
+      ctx.fillStyle = DARK.sky;
+      ctx.fillRect(x - 2, h.y - 2, w, 13);
+      ctx.fillStyle = PALETTE.sky;
+      ctx.fillRect(x - 1, h.y - 1, w - 2, 11);
+      ctx.fillStyle = PALETTE.text;
+      ctx.fillText(h.text, x + 1, h.y);
+    }
   }
 
   function drawHUDCoin(x, y) {
